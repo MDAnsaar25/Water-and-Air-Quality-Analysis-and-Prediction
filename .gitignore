@@ -1,0 +1,18 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Secrets / tokens
+.env
+*.token
+
+# Generated files
+aqi_history.png
+
+# OS / IDE
+.DS_Store
+.vscode/
