@@ -70,6 +70,18 @@ def train_classifier(history: pd.DataFrame, seed=42, categories=None):
     df["label"] = df["raw_label"].map(label_map)
 
     X, y = df[feats], df["label"]
+    # Edge case: history-la oரே ஒரு category mattum irundha,
+    # XGBoost multi-class train aagaathu. Constant predictor return pannu.
+    if len(present) < 2:
+        only = present[0]
+        class SingleClass:
+            def __init__(self, c): self.c = c
+            def predict(self, X):
+                return np.full(len(X), 0)
+            def predict_proba(self, X):
+                return np.ones((len(X), 1))
+        return SingleClass(0), feats, 1.0, inv_map
+
     model = XGBClassifier(
         n_estimators=300,
         max_depth=5,
@@ -77,13 +89,16 @@ def train_classifier(history: pd.DataFrame, seed=42, categories=None):
         subsample=0.9,
         colsample_bytree=0.9,
         objective="multi:softprob",
-        num_class=max(len(present), 2),
+        num_class=len(present),
         random_state=seed,
         n_jobs=2,
         eval_metric="mlogloss",
     )
     model.fit(X, y)
-    acc = (model.predict(X) == y).mean()
+    # predict_proba argmax use pannrom -- binary/multi ellaa case-layum
+    # consistent-a class indices tharum (predict() binary-la shape mismatch tharum)
+    pred = np.argmax(model.predict_proba(X), axis=1)
+    acc = float(np.mean(pred == y.to_numpy()))
     return model, feats, acc, inv_map
 
 
